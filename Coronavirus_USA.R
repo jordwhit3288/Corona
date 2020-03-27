@@ -3,8 +3,13 @@ library(tidyr)
 library(ggplot2)
 library(mapdata)
 library(RColorBrewer)
+library(readr)
 
-#Testing commit.. 
+
+jhk_corona_data <- read_csv("COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-26-2020.csv")
+View(jhk_corona_data)
+
+
 corona_data <- jhk_corona_data
 head(corona_data)
 

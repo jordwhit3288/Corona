@@ -104,7 +104,7 @@ plot_clean_background <- theme(
 case_count_country_plot <- state_base + 
   geom_polygon(data = joined_states, aes(fill = cases), color = "white") +
   geom_polygon(color = "black", fill = NA) +
-  theme_bw() +
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
 case_count_country_plot 
@@ -126,7 +126,7 @@ case_count_country_plot_addition <- case_count_country_plot +
 
 #BOOM!
 case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
-
+case_count_country_plot
 
 #########  Population Percentage  ##############
 library(readr)
@@ -161,7 +161,7 @@ colnames(inner_join_pop)[9] <- "Percent_Infected"
 percent_infected_plot <- state_base + 
   geom_polygon(data = inner_join_pop, aes(fill = Percent_Infected), color = "white") +
   geom_polygon(color = "black", fill = NA) +
-  theme_bw() +
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) 
   plot_clean_background
 
 percent_infected_plot 
@@ -177,10 +177,12 @@ display.brewer.all()
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       breaks = c(.01,.03, .075, 0.2)
+                       breaks = c(.01,.03, .075, .20)
                        ,trans="log10")
 
 percent_infected_plot_addition + ggtitle("Percent of State Population Infected")
+
+
 
 
 

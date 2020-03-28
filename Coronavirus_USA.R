@@ -6,7 +6,7 @@ library(RColorBrewer)
 library(readr)
 
 
-jhk_corona_data <- read_csv("COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-26-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
 View(jhk_corona_data)
 
 
@@ -24,6 +24,7 @@ head(corona_data)
 
 new_usa_data <- filter(corona_data, country == 'US')
 head(new_usa_data)
+View(new_usa_data)
 
 current_case_count <- new_usa_data %>%
   group_by(state) %>%
@@ -36,7 +37,7 @@ current_case_count <- new_usa_data %>%
 # current_case_count <- new_usa_data %>%
 #   filter(Date == max(Date))
 
-states_v <- c('Alabama', 'Alaska', 'American Samoa', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Guam', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Minor Outlying Islands', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Northern Mariana Islands', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Puerto Rico', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'U.S. Virgin Islands', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
 states_v
 
 #usa_new <- usa_data[usa_data$State %in% states_v,]
@@ -59,6 +60,8 @@ current_case_count[[1]] <- tolower(current_case_count[[1]])
 
 current_case_count
 
+max(current_case_count$cases)
+
 colnames(states)[5] <- "state"
 states
 
@@ -68,6 +71,7 @@ states
 joined_states <- inner_join(states, current_case_count, by = 'state')
 joined_states
 
+max(joined_states$cases)
 
 
 plot_clean_background <- theme(
@@ -106,8 +110,7 @@ case_count_country_plot_addition <- case_count_country_plot +
 case_count_country_plot_addition + ggtitle("Cases Per State")
 
 
-
-##Population Percentage 
+#########  Population Percentage  ##############
 library(readr)
 usa_population <- read_delim("usa_population.csv", 
                              "|", escape_double = FALSE, trim_ws = TRUE)
@@ -154,10 +157,157 @@ display.brewer.all()
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       breaks = c(.003,.010, .030, 0.100)
+                       breaks = c(.01,.03, .075, 0.2)
                        ,trans="log10")
 
 percent_infected_plot_addition + ggtitle("Percent of State Population Infected")
+
+
+
+
+
+############### NEW TESTING ##################
+
+####testing dots for cases
+
+library(ggmap)
+library(sp)
+library(ggfortify)
+library(usmap)
+library(maptools)
+library(rgdal)
+#example
+
+us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+usa_map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
+usa_map
+class(usa_map)
+
+jp <-  map('world2', 'japan', plot = FALSE, fill = TRUE)
+class(jp)
+
+p <- autoplot(jp, geom = 'polygon', fill = 'subregion') + 
+  theme(legend.position="none")
+p
+
+df <- data.frame(long = c(139.691704, 135.519711),
+                 lat = c(35.689521, 34.686316),
+                 label = c('Tokyo', 'Osaka'),
+                 population = c(1335, 886))
+coordinates(joined_states) <- ~ long + lat
+class(df)
+
+autoplot(df, p = p, colour = 'red', size = 'population') 
+
+###usa map
+data <- data.frame(
+  lon = c(-74.01, -95.36, -118.24, -87.65, -134.42, -157.86),
+  lat = c(40.71, 29.76, 34.05, 41.85, 58.30, 21.31),
+  pop = c(8398748, 2325502, 3990456, 2705994, 32113, 347397)
+)
+# Transform data
+transformed_data <- usmap_transform(data)
+# Plot transformed data on map
+plot_usmap() + geom_point(
+  data = transformed_data,
+  aes(x = lon.1, y = lat.1, size = pop),
+  color = "red", alpha = 0.5
+)
+
+
+##need to filter for current date..
+library(dplyr)
+View(new_usa_data)
+#reordering to see if this helps.... 
+
+cities_current_cases <- new_usa_data[,c(2,3,6,7,8)]
+View(cities_current_cases)
+
+colnames(cities_current_cases)[1] <- "county"
+colnames(cities_current_cases)[2] <- "state"
+colnames(cities_current_cases)[3] <- "lat"
+colnames(cities_current_cases)[4] <- "long"
+colnames(cities_current_cases)[5] <- "cases"
+
+View(cities_current_cases)
+
+county_df <- usmap::us_map(regions = "counties")
+View(county_df)
+library(stringr)
+county_df$county <- gsub("[ County]", "", county_df$county)
+
+county_df <- str_replace(county_df$county, "([ County])", '')
+View(county_df)
+
+joined_counties_with_map_data <- inner_join(county_df, cities_current_cases, key=lat)
+
+View(joined_counties_with_map_data)
+
+
+#joined_counties_with_map_data <- joined_counties_with_map_data[joined_counties_with_map_data$state %in% states_v,]
+
+map_data <- joined_counties_with_map_data[,c(2,1,14)]
+
+View(map_data)
+transformed_data <- usmap_transform(map_data)
+
+library(usmap)
+library(ggplot2)
+
+
+plot_usmap("states") +
+  geom_point( data= transformed_data,
+              aes(x=long.1, y=lat.1, size = cases),
+              color="red", alpha = 0.5) +
+  #labs(title = "US Earthquakes",
+  #      subtitle = "Source: USGS, Jan 1 to Jun 30 2019",
+  #       size = "Magnitude") +
+  theme(legend.justification = c(1, 0), legend.position = c(1, 0))
+
+
+
+####
+
+new_map_data <- new_usa_data[,c(7,6,8)]
+head(new_map_data)
+new_map_data <- data.frame(new_map_data)
+new_map_data <- new_map_data[new_map_data$Confirmed > 50, ]
+
+head(new_map_data)
+
+transformed_data <- usmap_transform(new_map_data)
+head(transformed_data)
+
+
+plot_usmap("states") + geom_point(
+  data= transformed_data,
+  aes(x=Long_.1, y=Lat.1, size = Confirmed),
+  color="red"
+)
+
+####Density test
+qmplot(long, lat, data = joined_states, geom = "blank", 
+       maptype = "toner-background", legend = "topleft"
+) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", alpha = .3, color = NA) +
+  scale_fill_gradient2(joined_states$cases, low = "white", mid = "yellow", high = "red", midpoint = 650)
+
+
+
+
+
+## my work 
+
+head(joined_states)
+
+coordinates(joined_states) <- ~ long + lat
+test_class_joined_states <- class(joined_states)
+
+autoplot(joined_states, p= state_base, color = 'red', size = joined_states$cases) 
+
+
+
+
 
 
 

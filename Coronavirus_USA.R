@@ -1,3 +1,9 @@
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("mapdata")
+install.packages("RColorBrewer")
+install.packages("readr")
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -5,14 +11,15 @@ library(mapdata)
 library(RColorBrewer)
 library(readr)
 
-
+#Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
 jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
 View(jhk_corona_data)
 
-
+#renaming dataframe to friendly name
 corona_data <- jhk_corona_data
 head(corona_data)
 
+#renaming specific column indices to friendly names
 colnames(corona_data)[2] <- "city"
 colnames(corona_data)[3] <- "state"
 colnames(corona_data)[4] <- "country"
@@ -21,31 +28,36 @@ colnames(corona_data)[5] <- "date"
 
 head(corona_data)
 
-
+#Filtering df to united states data
 new_usa_data <- filter(corona_data, country == 'US')
 head(new_usa_data)
 View(new_usa_data)
 
+#grouping by state to aggregate the num of confirmed cases
 current_case_count <- new_usa_data %>%
   group_by(state) %>%
   summarize(cases = sum(Confirmed))
 
 
+### this is a test. ignore.
 # new_usa_data$date <as.Date(new_usa_data$date, "%m/%d/%y")
 # new_usa_data
 # 
 # current_case_count <- new_usa_data %>%
 #   filter(Date == max(Date))
 
+# States vector for further filtration 
 states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
 states_v
 
 #usa_new <- usa_data[usa_data$State %in% states_v,]
+
+#using states_v vector to filter out the current_case_count df
 current_case_count <- current_case_count[current_case_count$state %in% states_v,]
 
 current_case_count
 
-
+#creating an object that will hold the USA map outline
 states <- map_data("state")
 states
 
@@ -55,25 +67,29 @@ state_base <- ggplot(data = states, mapping = aes(x = long, y = lat, group = gro
   geom_polygon(color = "black", fill = "gray")
 state_base
 
-
+#lower casing the state field for joining purposes.
 current_case_count[[1]] <- tolower(current_case_count[[1]])
 
 current_case_count
 
+#looking at max cases :o scary 
 max(current_case_count$cases)
 
+#renaming the column to ensure a join will occur (case matters. lame.)
 colnames(states)[5] <- "state"
 states
 
 # current_case_count <- current_case_count[,c (1,6)]
 # current_case_count
 
+#creating a new df based off of the states df and the current_case_count df :)
 joined_states <- inner_join(states, current_case_count, by = 'state')
 joined_states
 
+# ...again... scary
 max(joined_states$cases)
 
-
+#getting rid of the messy background 
 plot_clean_background <- theme(
   axis.text = element_blank(),
   axis.line = element_blank(),
@@ -83,6 +99,7 @@ plot_clean_background <- theme(
   axis.title = element_blank()
 )
 
+### doing some manipulation of the plot
 
 case_count_country_plot <- state_base + 
   geom_polygon(data = joined_states, aes(fill = cases), color = "white") +
@@ -107,7 +124,8 @@ case_count_country_plot_addition <- case_count_country_plot +
                        breaks = c(100, 500, 1500, 7500, 15000, 30000), 
                        trans="log10")
 
-case_count_country_plot_addition + ggtitle("Cases Per State")
+#BOOM!
+case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
 
 
 #########  Population Percentage  ##############
@@ -136,10 +154,12 @@ inner_join_pop
 inner_join_pop$percent_infected <- inner_join_pop$cases/inner_join_pop$population
 inner_join_pop$percent_infected <-inner_join_pop$percent_infected * 100
 
+colnames(inner_join_pop)[9] <- "Percent_Infected"
+
 
 
 percent_infected_plot <- state_base + 
-  geom_polygon(data = inner_join_pop, aes(fill = percent_infected), color = "white") +
+  geom_polygon(data = inner_join_pop, aes(fill = Percent_Infected), color = "white") +
   geom_polygon(color = "black", fill = NA) +
   theme_bw() +
   plot_clean_background
@@ -259,9 +279,10 @@ plot_usmap("states") +
   geom_point( data= transformed_data,
               aes(x=long.1, y=lat.1, size = cases),
               color="red", alpha = 0.5) +
-  #labs(title = "US Earthquakes",
-  #      subtitle = "Source: USGS, Jan 1 to Jun 30 2019",
-  #       size = "Magnitude") +
+  labs(title = "US Earthquakes",
+        subtitle = "Source: USGS, Jan 1 to Jun 30 2019",
+  
+              size = "Magnitude") +
   theme(legend.justification = c(1, 0), legend.position = c(1, 0))
 
 

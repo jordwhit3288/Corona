@@ -12,13 +12,20 @@ library(RColorBrewer)
 library(readr)
 
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-30-2020.csv")
 View(jhk_corona_data)
 
 #renaming dataframe to friendly name
 corona_data <- jhk_corona_data
 head(corona_data)
 
+#for data prior 3-25-2020
+colnames(corona_data)[1] <- "state"
+colnames(corona_data)[2] <- "country"
+colnames(corona_data)[3] <- "date"
+
+
+###for data past 3-25-2020
 #renaming specific column indices to friendly names
 colnames(corona_data)[2] <- "city"
 colnames(corona_data)[3] <- "state"
@@ -37,14 +44,6 @@ View(new_usa_data)
 current_case_count <- new_usa_data %>%
   group_by(state) %>%
   summarize(cases = sum(Confirmed))
-
-
-### this is a test. ignore.
-# new_usa_data$date <as.Date(new_usa_data$date, "%m/%d/%y")
-# new_usa_data
-# 
-# current_case_count <- new_usa_data %>%
-#   filter(Date == max(Date))
 
 # States vector for further filtration 
 states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
@@ -101,32 +100,46 @@ plot_clean_background <- theme(
 
 ### doing some manipulation of the plot
 
+
 case_count_country_plot <- state_base + 
-  geom_polygon(data = joined_states, aes(fill = cases), color = "white") +
+  geom_polygon(data = joined_states, aes(fill = cases), color = "green") +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
-case_count_country_plot 
+case_count_country_plot
+
+case_count_country_plot(color = "red")
 
 #log 10 helps 
-case_count_country_plot + scale_fill_gradient(trans = "log10")
+case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
 
 #picking an appropriate color scheme
 display.brewer.all()
 mypalette<-brewer.pal(4,"Spectral")
 mypalette
 
+case_count_country_plot_addition <- case_count_country_plot +
+  scale_fill_gradient2(
+    low = "red",
+    mid = "white",
+    high = "blue",
+  label=scales::comma)
+ 
 
-case_count_country_plot_addition <- case_count_country_plot + 
-  scale_fill_gradientn(colours = rev(mypalette),
-                       #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       breaks = c(100, 500, 1500, 7500, 15000, 30000), 
-                       trans="log10")
+ scale_fill_continuous(low = "white", high = "red", name = "Cases", label=scales::comma)
+case_count_country_plot_addition
 
-#BOOM!
-case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
-case_count_country_plot
+# case_count_country_plot_addition <- case_count_country_plot_addition + 
+#   scale_fill_gradientn(colours = rev(mypalette)
+#                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
+#                        # 03-31-2020 
+#                        #breaks = c(100, 1000, 5000, 15000, 60000), 
+#                        breaks = c(0, 50, 200 , 400, 600))
+# 
+# #BOOM!
+# case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
+# case_count_country_plot
 
 #########  Population Percentage  ##############
 library(readr)

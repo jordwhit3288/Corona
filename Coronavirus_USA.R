@@ -174,7 +174,7 @@ colnames(inner_join_pop)[9] <- "Percent_Infected"
 percent_infected_plot <- state_base + 
   geom_polygon(data = inner_join_pop, aes(fill = Percent_Infected), color = "white") +
   geom_polygon(color = "black", fill = NA) +
-  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) 
+ # theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) 
   plot_clean_background
 
 percent_infected_plot 

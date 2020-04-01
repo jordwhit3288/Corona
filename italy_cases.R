@@ -31,8 +31,20 @@ date <- date[1:68]
 date
 
 italy_daily_increase <- data.frame(date, daily_increase)
+italy_daily_increase <- filter(italy_daily_increase, daily_increase > 10)
+
 italy_daily_increase
 
-ggplot(italy_daily_increase, aes(x=date, y=daily_increase)) + 
+class(italy_daily_increase$date)
+italy_daily_increase$date <- as.Date(italy_daily_increase$date, format='%m/%d/%y')
+class(italy_daily_increase$daily_increase)
+
+  
+ggplot(data = italy_daily_increase, mapping=aes(x=date, y=daily_increase)) + 
   geom_point() +
   geom_smooth()
+
+ggplot(data = italy_daily_increase) +
+  geom_smooth(mapping = aes(x=date, y=daily_increase))
+
+              

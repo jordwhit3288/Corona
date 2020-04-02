@@ -13,19 +13,16 @@ library(readr)
 
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
 jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-01-2020.csv")
+
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-22-2020.csv")
 View(jhk_corona_data)
 
 #renaming dataframe to friendly name
 corona_data <- jhk_corona_data
 head(corona_data)
 
-#for data prior 3-25-2020
-colnames(corona_data)[1] <- "state"
-colnames(corona_data)[2] <- "country"
-colnames(corona_data)[3] <- "date"
 
-
-###for data past 3-25-2020
 #renaming specific column indices to friendly names
 colnames(corona_data)[2] <- "city"
 colnames(corona_data)[3] <- "state"
@@ -44,6 +41,8 @@ View(new_usa_data)
 current_case_count <- new_usa_data %>%
   group_by(state) %>%
   summarize(cases = sum(Confirmed))
+
+head(current_case_count)
 
 # States vector for further filtration 
 states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
@@ -112,10 +111,10 @@ case_count_country_plot
 case_count_country_plot(color = "red")
 
 #log 10 helps 
-case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
-case_count_country_plot
+# case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
+# case_count_country_plot
 #picking an appropriate color scheme
-display.brewer.all()
+#display.brewer.all()
 mypalette<-brewer.pal(10,"Spectral")
 mypalette
 
@@ -130,16 +129,18 @@ case_count_country_plot_addition <- case_count_country_plot +
  scale_fill_continuous(low = "white", high = "red", name = "Cases", label=scales::comma)
 case_count_country_plot_addition
 
-case_count_country_plot_addition <- case_count_country_plot_addition +
+case_count_country_plot_addition <- case_count_country_plot +
   scale_fill_gradientn(colours = rev(mypalette),
                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
                        # 03-31-2020
-                       breaks = c(50, 500 ,1500, 7500, 20000,60000),
-                       trans="log10")
+                       breaks = c(50, 150, 500, 1500, 3500, 15000),
+                       #breaks = c(500, 1500, 6500, 20000, 60000),
+                       trans="log10",
+                       label=scales::comma)
                        #breaks = c(0, 50, 200 , 400, 600))
 
 #BOOM!
-case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
+case_count_country_plot <- case_count_country_plot_addition + ggtitle("March 22 Cases Per State")
 case_count_country_plot
 
 #########  Population Percentage  ##############
@@ -190,11 +191,11 @@ display.brewer.all()
 
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
-                       #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       breaks = c(.01,.03, .1, .30)
+                         breaks = c(.0015, .003, 0.010,  .040)
+                       #breaks = c(.01,.03, .1, .30)
                        ,trans="log10")
 
-percent_infected_plot_addition + ggtitle("Percent of State Population Infected")
+percent_infected_plot_addition + ggtitle("March 22 Percent of State Population Infected")
 
 
 

@@ -12,7 +12,7 @@ library(RColorBrewer)
 library(readr)
 
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-30-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-01-2020.csv")
 View(jhk_corona_data)
 
 #renaming dataframe to friendly name
@@ -113,10 +113,10 @@ case_count_country_plot(color = "red")
 
 #log 10 helps 
 case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
-
+case_count_country_plot
 #picking an appropriate color scheme
 display.brewer.all()
-mypalette<-brewer.pal(4,"Spectral")
+mypalette<-brewer.pal(10,"Spectral")
 mypalette
 
 case_count_country_plot_addition <- case_count_country_plot +
@@ -130,16 +130,17 @@ case_count_country_plot_addition <- case_count_country_plot +
  scale_fill_continuous(low = "white", high = "red", name = "Cases", label=scales::comma)
 case_count_country_plot_addition
 
-# case_count_country_plot_addition <- case_count_country_plot_addition + 
-#   scale_fill_gradientn(colours = rev(mypalette)
-#                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-#                        # 03-31-2020 
-#                        #breaks = c(100, 1000, 5000, 15000, 60000), 
-#                        breaks = c(0, 50, 200 , 400, 600))
-# 
-# #BOOM!
-# case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
-# case_count_country_plot
+case_count_country_plot_addition <- case_count_country_plot_addition +
+  scale_fill_gradientn(colours = rev(mypalette),
+                       #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
+                       # 03-31-2020
+                       breaks = c(50, 500 ,1500, 7500, 20000,60000),
+                       trans="log10")
+                       #breaks = c(0, 50, 200 , 400, 600))
+
+#BOOM!
+case_count_country_plot <- case_count_country_plot_addition + ggtitle("Cases Per State")
+case_count_country_plot
 
 #########  Population Percentage  ##############
 library(readr)
@@ -182,7 +183,7 @@ percent_infected_plot + scale_fill_gradient(trans = "log10")
 
 percent_infected_plot
 
-mypalette<-brewer.pal(4,"Spectral")
+mypalette<-brewer.pal(6,"Spectral")
 mypalette
 
 display.brewer.all()
@@ -190,7 +191,7 @@ display.brewer.all()
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
                        #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       breaks = c(.01,.03, .075, .20)
+                       breaks = c(.01,.03, .1, .30)
                        ,trans="log10")
 
 percent_infected_plot_addition + ggtitle("Percent of State Population Infected")

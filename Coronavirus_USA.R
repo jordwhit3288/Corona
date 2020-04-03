@@ -10,9 +10,13 @@ library(ggplot2)
 library(mapdata)
 library(RColorBrewer)
 library(readr)
-
+library(widgetframe)
+library(plotly)
+library(hrbrthemes)
+library(colormap)
+library(plotly)
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-01-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
 
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-22-2020.csv")
@@ -100,49 +104,50 @@ plot_clean_background <- theme(
 ### doing some manipulation of the plot
 
 
-case_count_country_plot <- state_base + 
-  geom_polygon(data = joined_states, aes(fill = cases), color = "green") +
+case_count_country_plot <- state_base + (aes(text= paste("Reported Cases:", joined_states$cases))) + 
+  geom_polygon(data = joined_states, aes(fill = cases)) +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
+
 case_count_country_plot
 
-case_count_country_plot(color = "red")
+
 
 #log 10 helps 
 # case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
 # case_count_country_plot
 #picking an appropriate color scheme
 #display.brewer.all()
-mypalette<-brewer.pal(10,"Spectral")
+mypalette<-brewer.pal(8,"Spectral")
 mypalette
 
-case_count_country_plot_addition <- case_count_country_plot +
-  scale_fill_gradient2(
-    low = "red",
-    mid = "white",
-    high = "blue",
-  label=scales::comma)
- 
 
- scale_fill_continuous(low = "white", high = "red", name = "Cases", label=scales::comma)
-case_count_country_plot_addition
 
 case_count_country_plot_addition <- case_count_country_plot +
   scale_fill_gradientn(colours = rev(mypalette),
-                       #  breaks = c(100, 500, 1500, 5000, 7500, 10000))
-                       # 03-31-2020
-                       breaks = c(50, 150, 500, 1500, 3500, 15000),
-                       #breaks = c(500, 1500, 6500, 20000, 60000),
+                       breaks = c(500, 1500, 6500, 20000, 80000),
                        trans="log10",
                        label=scales::comma)
-                       #breaks = c(0, 50, 200 , 400, 600))
+
+case_count_country_plot_addition
 
 #BOOM!
-case_count_country_plot <- case_count_country_plot_addition + ggtitle("March 22 Cases Per State")
-case_count_country_plot
+case_count_country_plot_addition <- case_count_country_plot_addition + ggtitle("April 2 Cases Per State")
+dynamic_label_plot <- plotly_build(case_count_country_plot_addition)
+ggplotly(dynamic_label_plot, tooltip = c("text", "x"))
 
+plotly_build(dynamic_label_plot)
+
+
+
+-----------------------------------------
+
+
+-------------------------------
+  
+  
 #########  Population Percentage  ##############
 library(readr)
 usa_population <- read_delim("usa_population.csv", 
@@ -179,8 +184,8 @@ percent_infected_plot <- state_base +
  # theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) 
   plot_clean_background
 
-percent_infected_plot 
-percent_infected_plot + scale_fill_gradient(trans = "log10")
+ percent_infected_plot 
+# percent_infected_plot + scale_fill_gradient(trans = "log10")
 
 percent_infected_plot
 
@@ -191,11 +196,11 @@ display.brewer.all()
 
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
-                         breaks = c(.0015, .003, 0.010,  .040)
+                         breaks = c(.015, .035, 0.1, .25,  .40)
                        #breaks = c(.01,.03, .1, .30)
                        ,trans="log10")
 
-percent_infected_plot_addition + ggtitle("March 22 Percent of State Population Infected")
+percent_infected_plot_addition + ggtitle("April 1 Percent of State Population Infected")
 
 
 

@@ -20,21 +20,24 @@ usa_total_plot <- ggplot(data=total_us_cases, aes(x=Date, y=Cases)) +
 plotly_build(usa_total_plot)
 
 ### NORTH CAROLINA PLOT
+
 north_carolina <- filter(us_states, us_states$state == 'North Carolina')
 
-max_date <- max(us_states$date)
+View(north_carolina)
 
+max_date <- max(us_states$date)
+max_date
 
 
 nc_plot <- ggplot(data=north_carolina, mapping=aes(x=date, y=cases)) +
   geom_point() +
   ggtitle("NC Cases") 
+nc_plot
 
-plot_ly(data=north_carolina, aes(x=date, y=cases)) +
-  geom_point()
+plotly_build(nc_plot)
 
 
-### CASES PER EACH STATES
+### CASES PER EACH STATE
 current_state_cases <- filter(us_states, us_states$date == max_date)
 
 head(current_state_cases)
@@ -55,6 +58,8 @@ plotly_build(all_states)
 class(us_states$fips)
 
 
+
+------------------------------- #### DON'T WORK BELOW
 fig <- plot_ly() 
 fig <- fig %>% add_trace(
   type="choropleth",
@@ -78,20 +83,20 @@ fig
 
 
 
-library(urbnmapr)
-
-states_urban <- urbnmapr::states
-
-joined_urban_nytimes <- inner_join(us_states, states_urban, by="state_fips")
-
-joined_urban_nytimes %>%
-  ggplot(aes(long, lat, fill = cases)) +
-  geom_polygon(color = NA) +
-  coord_map(projection = "albers", lat0= 39, lat1 =45) +
-  labs(fill = "Cases By State")
-
-ggplot(data = joined_urban_nytimes, aes(x=long, y=lat, fill = cases)) +
-  geom_polygon(color = NA)
+# library(urbnmapr)
+# 
+# states_urban <- urbnmapr::states
+# 
+# joined_urban_nytimes <- inner_join(us_states, states_urban, by="state_fips")
+# 
+# joined_urban_nytimes %>%
+#   ggplot(aes(long, lat, fill = cases)) +
+#   geom_polygon(color = NA) +
+#   coord_map(projection = "albers", lat0= 39, lat1 =45) +
+#   labs(fill = "Cases By State")
+# 
+# ggplot(data = joined_urban_nytimes, aes(x=long, y=lat, fill = cases)) +
+#   geom_polygon(color = NA)
 
 
 

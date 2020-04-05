@@ -1,9 +1,20 @@
+install.packages("readr")
 install.packages("dplyr")
 install.packages("tidyr")
 install.packages("ggplot2")
 install.packages("mapdata")
 install.packages("RColorBrewer")
 install.packages("readr")
+install.packages("widgetframe")
+install.packages("plotly")
+install.packages("hrbrthemes")
+install.packages("colormap")
+install.packages("tools")
+install.packages("readxl")
+install.packages("formattable")
+install.packages("stringr")
+install.packages("usmap")
+library(readr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -11,20 +22,23 @@ library(mapdata)
 library(RColorBrewer)
 library(readr)
 library(widgetframe)
-library(plotly)
 library(hrbrthemes)
 library(colormap)
 library(plotly)
-
+library(tools)
+library(readxl)
+library(formattable)
+library(stringr)
+library(usmap)
 --------------------------------------------------
   
   ##### TOTAL CASES PER STATE PLOT ####
 
 --------------------------------------------------
 
-
+library(readr)
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-04-2020.csv")
 
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-22-2020.csv")
@@ -49,7 +63,6 @@ new_usa_data <- filter(corona_data, country == 'US')
 head(new_usa_data)
 View(new_usa_data)
 
-library(dplyr)
 
 #grouping by state to aggregate the num of confirmed cases
 current_case_count <- new_usa_data %>%
@@ -76,7 +89,7 @@ View(current_case_count)
 states <- map_data("state")
 states
 
-
+  
 state_base <- ggplot(data = states, mapping = aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) + 
   geom_polygon(color = "black", fill = "gray")
@@ -115,16 +128,12 @@ plot_clean_background <- theme(
 )
 plot_clean_background
 
-capitalize(joined_states$state)
 
-
-#to upper on the state column for plotting :)
-joined_states$state <- capitalize(joined_states$state)
-
+joined_states$state <- toTitleCase(joined_states$state)
 
 ### doing some manipulation of the plot
 case_count_country_plot <- state_base + (aes(text= paste("State:", joined_states$state, "\n", "Reported Cases:", joined_states$cases))) + 
-  geom_polygon(data = joined_states, aes(fill = cases)) +
+  geom_polygon(data = joined_states, aes(fill = cases), color = "grey") +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
@@ -145,17 +154,15 @@ mypalette
 
 case_count_country_plot_addition <- case_count_country_plot +
   scale_fill_gradientn(colours = rev(mypalette),
-                       breaks = c(500, 1500, 6500, 20000, 80000),
+                       breaks = c(500, 1500, 6500, 20000, 95000),
                        trans="log10",
                        label=scales::comma)
 
 case_count_country_plot_addition
 
 #BOOM!
-case_count_country_plot_addition <- case_count_country_plot_addition + ggtitle("April 2 Cases Per State")
+case_count_country_plot_addition <- case_count_country_plot_addition + ggtitle("April 4 Cases Per State")
 dynamic_label_plot <- plotly_build(case_count_country_plot_addition)
-
-
 plotly_build(dynamic_label_plot)
 
 
@@ -164,6 +171,120 @@ plotly_build(dynamic_label_plot)
 ### END OF TOTAL CASES PER STATE PLOT ###
 -----------------------------------------
   
+  --------------------------------------------------
+  
+  ##### DEATHS PER STATE ####
+
+--------------------------------------------------  
+  
+current_death <- new_usa_data %>%
+  group_by(state) %>%
+  summarise(cases = sum(Deaths))
+
+head(current_death)
+
+#filter(current_death, state == 'New York')
+
+head(current_death)
+
+# States vector for further filtration 
+states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+states_v
+
+#usa_new <- usa_data[usa_data$State %in% states_v,]
+
+#using states_v vector to filter out the current_case_count df
+current_death <- current_death[current_death$state %in% states_v,]
+
+View(current_death)
+
+#creating an object that will hold the USA map outline
+states <- map_data("state")
+states
+
+
+state_base <- ggplot(data = states, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray")
+state_base
+
+#lower casing the state field for joining purposes.
+current_death[[1]] <- tolower(current_death[[1]])
+colnames(current_death)[2] <- 'deaths'
+current_death
+
+#looking at deaths :o scary 
+max(current_death$deaths)
+
+#renaming the column to ensure a join will occur (case matters. lame.)
+head(states)
+colnames(states)[5] <- "state"
+head(states)
+
+# current_case_count <- current_case_count[,c (1,6)]
+# current_case_count
+
+head(current_death)
+
+
+#creating a new df based off of the states df and the current_case_count df :)
+joined_states_death <- inner_join(states, current_death, by = 'state')
+head(joined_states_death)
+
+# ...again... scary
+max(joined_states_death$deaths)
+
+#getting rid of the messy background 
+plot_clean_background <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank()
+)
+
+
+#to upper on the state column for plotting :)
+joined_states_death$state <- str_to_title(joined_states_death$state)
+
+### doing some manipulation of the plot
+country_death_plot <- state_base + (aes(text= paste("State:", joined_states_death$state, "\n", "Deaths:", joined_states_death$deaths))) + 
+  geom_polygon(data = joined_states_death, aes(fill = deaths), color="grey") +
+  geom_polygon(color = "black", fill = NA) +
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
+  plot_clean_background
+
+plotly_build(country_death_plot)
+country_death_plot 
+
+
+#log 10 helps 
+# case_count_country_plot <- case_count_country_plot + scale_fill_gradient2(trans = "log10")
+# case_count_country_plot
+#picking an appropriate color scheme
+#display.brewer.all()
+mypalette<-brewer.pal(8,"Spectral")
+mypalette
+
+
+
+country_death_plot_addition <- country_death_plot +
+  scale_fill_gradientn(colours = rev(mypalette),
+                       breaks = c(10, 50, 100, 300, 750,3000),
+                       trans="log10",
+                       label=scales::comma)
+
+country_death_plot_addition
+
+#BOOM!
+country_death_plot_addition <- country_death_plot_addition + ggtitle("April 4 Deaths Per State")
+dynamic_label_plot_deaths <- plotly_build(country_death_plot_addition)
+dynamic_label_plot_deaths
+
+
+  
+  
   
 --------------------------------------------------
   
@@ -171,7 +292,7 @@ plotly_build(dynamic_label_plot)
 
 --------------------------------------------------
   
-library(readxl)
+
 usa_population <- read_excel("states_population.xlsx", 
                                 col_names = FALSE)
 #View(usa_population)  
@@ -189,7 +310,7 @@ usa_population$states <- iconv(usa_population$state, "UTF-8", "UTF-8",sub='')
 
 class(usa_population)
 
-library(tools)
+
 joined_states$state <- toTitleCase(joined_states$state)
 
 
@@ -217,15 +338,17 @@ View(inner_join_pop)
 
 
 inner_join_pop$percent_infected <- inner_join_pop$cases/inner_join_pop$population
-inner_join_pop$percent_infected <-inner_join_pop$percent_infected * 100
+#inner_join_pop$percent_infected <-inner_join_pop$percent_infected * 100
+
+inner_join_pop$percent_infected <- percent(inner_join_pop$percent_infected ,3)
 
 #colnames(inner_join_pop)[9] <- "Percent_Infected"
 
 View(inner_join_pop)
 
-inner_join_pop$percent_infected <- round(inner_join_pop$percent_infected, 3)
+#inner_join_pop$percent_infected <- round(inner_join_pop$percent_infected, 3)
 
-percent_infected_plot <- state_base + (aes(text= paste("State:", inner_join_pop$state, "\n", "Percent Infected:", inner_join_pop$percent_infected, "%"))) + 
+percent_infected_plot <- state_base + (aes(text= paste("State:", inner_join_pop$state, "\n", "Percent Infected:", inner_join_pop$percent_infected))) + 
   geom_polygon(data = inner_join_pop, aes(fill = percent_infected)) +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
@@ -246,15 +369,21 @@ percent_infected_plot_addition <- percent_infected_plot +
                        #breaks = c(.01,.03, .1, .30)
                        ,trans="log10")
 
-percent_infected_plot_addition + ggtitle("April 1 Percent of State Population Infected")
+percent_infected_plot_addition + ggtitle("April 4 Percent of State Population Infected")
 
 plotly_build(percent_infected_plot_addition)
   
   
   
-#########  Population Percentage  ##############
+-------------------------------------------------------
+  
+  
+### OTHER TESTING ... 
+  
+### END OF SCRIPT ...
 
-
+-------------------------------------------------------
+  
 ####testing dots for cases
 
 library(ggmap)

@@ -15,6 +15,14 @@ library(plotly)
 library(hrbrthemes)
 library(colormap)
 library(plotly)
+
+--------------------------------------------------
+  
+  ##### TOTAL CASES PER STATE PLOT ####
+
+--------------------------------------------------
+
+
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
 jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
 
@@ -41,10 +49,15 @@ new_usa_data <- filter(corona_data, country == 'US')
 head(new_usa_data)
 View(new_usa_data)
 
+library(dplyr)
+
 #grouping by state to aggregate the num of confirmed cases
 current_case_count <- new_usa_data %>%
   group_by(state) %>%
-  summarize(cases = sum(Confirmed))
+  summarise(cases = sum(Confirmed))
+
+head(current_case_count)
+
 
 head(current_case_count)
 
@@ -57,7 +70,7 @@ states_v
 #using states_v vector to filter out the current_case_count df
 current_case_count <- current_case_count[current_case_count$state %in% states_v,]
 
-current_case_count
+View(current_case_count)
 
 #creating an object that will hold the USA map outline
 states <- map_data("state")
@@ -100,19 +113,24 @@ plot_clean_background <- theme(
   panel.grid = element_blank(),
   axis.title = element_blank()
 )
+plot_clean_background
+
+capitalize(joined_states$state)
+
+
+#to upper on the state column for plotting :)
+joined_states$state <- capitalize(joined_states$state)
+
 
 ### doing some manipulation of the plot
-
-
-case_count_country_plot <- state_base + (aes(text= paste("Reported Cases:", joined_states$cases))) + 
+case_count_country_plot <- state_base + (aes(text= paste("State:", joined_states$state, "\n", "Reported Cases:", joined_states$cases))) + 
   geom_polygon(data = joined_states, aes(fill = cases)) +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
-
-case_count_country_plot
-
+plotly_build(case_count_country_plot)
+case_count_country_plot 
 
 
 #log 10 helps 
@@ -120,7 +138,7 @@ case_count_country_plot
 # case_count_country_plot
 #picking an appropriate color scheme
 #display.brewer.all()
-mypalette<-brewer.pal(8,"Spectral")
+mypalette<-brewer.pal(5,"Spectral")
 mypalette
 
 
@@ -136,55 +154,84 @@ case_count_country_plot_addition
 #BOOM!
 case_count_country_plot_addition <- case_count_country_plot_addition + ggtitle("April 2 Cases Per State")
 dynamic_label_plot <- plotly_build(case_count_country_plot_addition)
-ggplotly(dynamic_label_plot, tooltip = c("text", "x"))
+
 
 plotly_build(dynamic_label_plot)
 
 
 
 -----------------------------------------
-
-
--------------------------------
+### END OF TOTAL CASES PER STATE PLOT ###
+-----------------------------------------
   
   
-#########  Population Percentage  ##############
-library(readr)
-usa_population <- read_delim("usa_population.csv", 
-                             "|", escape_double = FALSE, trim_ws = TRUE)
+--------------------------------------------------
+  
+  ##### PERCENT OF STATE POPULATION INFECTED ####
+
+--------------------------------------------------
+  
+library(readxl)
+usa_population <- read_excel("states_population.xlsx", 
+                                col_names = FALSE)
+#View(usa_population)  
+  
+#View(usa_population)
+colnames(usa_population)[1] <- "state"
+colnames(usa_population)[2] <- "population"
+
+# usa_population <- usa_population[-c(3:10)]
+# usa_population
+# 
+usa_population$states = trimws(usa_population$state)
+Encoding(usa_population$state) <- "UTF-8"
+usa_population$states <- iconv(usa_population$state, "UTF-8", "UTF-8",sub='')
+
+class(usa_population)
+
+library(tools)
+joined_states$state <- toTitleCase(joined_states$state)
+
+
+View(usa_population$state)
+
+usa_population$state <- str_trim(usa_population$state)
+
+states_v <- c('Alabama', 'Alaska','Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+states_v
+
+#usa_new <- usa_data[usa_data$State %in% states_v,]
+
+#using states_v vector to filter out the current_case_count df
+usa_population <- usa_population[usa_population$state %in% states_v,]
+usa_population <- usa_population[c(1,2)]
 View(usa_population)
 
-usa_population <- usa_population[-c(3:10)]
-usa_population
 
-trimws(usa_population$state, "left")
-Encoding(usa_population$state) <- "UTF-8"
-usa_population$state <- iconv(usa_population$state, "UTF-8", "UTF-8",sub='')
+join_prep_df <- joined_states[,c(1,2,3,5,7)]
 
-usa_population$state
-usa_population
+View(join_prep_df)
 
-usa_population[[1]] <- tolower(usa_population[[1]])
-
-
-inner_join_pop <- inner_join(joined_states, usa_population, key=states)
-inner_join_pop
+inner_join_pop <- inner_join(join_prep_df, usa_population, key=state)
+View(inner_join_pop)
 
 
 inner_join_pop$percent_infected <- inner_join_pop$cases/inner_join_pop$population
 inner_join_pop$percent_infected <-inner_join_pop$percent_infected * 100
 
-colnames(inner_join_pop)[9] <- "Percent_Infected"
+#colnames(inner_join_pop)[9] <- "Percent_Infected"
 
+View(inner_join_pop)
 
+inner_join_pop$percent_infected <- round(inner_join_pop$percent_infected, 3)
 
-percent_infected_plot <- state_base + 
-  geom_polygon(data = inner_join_pop, aes(fill = Percent_Infected), color = "white") +
+percent_infected_plot <- state_base + (aes(text= paste("State:", inner_join_pop$state, "\n", "Percent Infected:", inner_join_pop$percent_infected))) + 
+  geom_polygon(data = inner_join_pop, aes(fill = percent_infected)) +
   geom_polygon(color = "black", fill = NA) +
- # theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) 
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
- percent_infected_plot 
+percent_infected_plot 
 # percent_infected_plot + scale_fill_gradient(trans = "log10")
 
 percent_infected_plot
@@ -192,23 +239,21 @@ percent_infected_plot
 mypalette<-brewer.pal(6,"Spectral")
 mypalette
 
-display.brewer.all()
 
 percent_infected_plot_addition <- percent_infected_plot + 
   scale_fill_gradientn(colours = rev(mypalette),
-                         breaks = c(.015, .035, 0.1, .25,  .40)
+                       breaks = c(.015, .035, 0.1, .25,  .40)
                        #breaks = c(.01,.03, .1, .30)
                        ,trans="log10")
 
 percent_infected_plot_addition + ggtitle("April 1 Percent of State Population Infected")
 
+plotly_build(percent_infected_plot_addition)
+  
+  
+  
+#########  Population Percentage  ##############
 
-
-
-
-
-
-############### NEW TESTING ##################
 
 ####testing dots for cases
 

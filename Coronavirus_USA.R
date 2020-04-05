@@ -225,7 +225,7 @@ View(inner_join_pop)
 
 inner_join_pop$percent_infected <- round(inner_join_pop$percent_infected, 3)
 
-percent_infected_plot <- state_base + (aes(text= paste("State:", inner_join_pop$state, "\n", "Percent Infected:", inner_join_pop$percent_infected))) + 
+percent_infected_plot <- state_base + (aes(text= paste("State:", inner_join_pop$state, "\n", "Percent Infected:", inner_join_pop$percent_infected, "%"))) + 
   geom_polygon(data = inner_join_pop, aes(fill = percent_infected)) +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +

@@ -89,6 +89,50 @@ plot_ly(new_df, color= new_df$cases)
 
 
 
+##########################################################################################
+
+
+
+install.packages('rjson')
+library(rjson)
+
+
+url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+counties <- rjson::fromJSON(file=url)
+View(counties)
+class(nc_data$fips)
+
+fig1 <- plot_ly()
+fig1 <- fig1 %>% add_trace(
+  type = "choroplethmapbox",
+  geojson=counties,
+  locations=nc_data$fips,
+  z = nc_data$Confirmed,
+  colorscale = "Viridis",
+  zmin = 0,
+  zmax = 12,
+  marker = list(line=list(
+    width = 0),
+    opacity = 0.5
+  )
+)
+
+fig1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -72,7 +72,7 @@ colnames(joined_nc_counties)[8] <- 'Cases'
 
 
 display.brewer.all(n=6)
-nc_palette<-brewer.pal(5,"Spectral")
+nc_palette<-brewer.pal(7,"Oranges")
 
 
 nc_confirmed_by_county <- nc_base  + 

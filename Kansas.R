@@ -78,7 +78,7 @@ kansas_palette<-brewer.pal(5,"Spectral")
 
 kansas_confirmed_by_county <- kansas_base  + 
   # (aes(text= paste("County:", joined_kansas_counties$county, "\n", "Reported Cases:", joined_kansas_counties$Cases))) +
-  geom_polygon(data = joined_kansas_counties, aes(fill = Cases), color = "gray90") +
+  geom_polygon(data = joined_kansas_counties, aes(fill = Cases), color = "black") +
   geom_polygon(color = "black", fill = NA) +
   scale_fill_gradientn(colours = rev(kansas_palette),
                        breaks = c(-5, 0, 5, 30, 50, 100, 150)) +
@@ -87,7 +87,7 @@ kansas_confirmed_by_county <- kansas_base  +
   ggtitle("Confirmed COVID-19 Cases per County - April 4")
 
 
-kansas_confirmed_by_county
+kansas_confirmed_by_county <- kansas_confirmed_by_county + scale_fill_gradient(trans="log10")
 plotly_build(kansas_confirmed_by_county, registerFrames = FALSE)
 
 ggplotly(kansas_confirmed_by_county)
@@ -109,11 +109,16 @@ plotly_build(kansas_deaths_by_county)
 
 
 
+library(sf)
 
+nc <- sf::st_read(system.file("shape/kansas.shp", package = "sf"), quiet = TRUE)
+nc
 
-
-
-
+fig <- ggplotly(
+  ggplot(joined_kansas_counties) +
+    geom_sf(aes(fill = Cases))
+)
+fig
 
 
 

@@ -38,9 +38,11 @@ library(usmap)
 
 library(readr)
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-04-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-07-2020.csv")
 
-#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-27-2020.csv")
+
+# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-28-2020.csv")
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-22-2020.csv")
 View(jhk_corona_data)
 
@@ -138,6 +140,8 @@ case_count_country_plot <- state_base + (aes(text= paste("State:", joined_states
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
 
+case_count_country_plot
+
 plotly_build(case_count_country_plot)
 case_count_country_plot 
 
@@ -147,21 +151,29 @@ case_count_country_plot
 # case_count_country_plot
 #picking an appropriate color scheme
 #display.brewer.all()
-mypalette<-brewer.pal(5,"Spectral")
+mypalette<-brewer.pal(15,"Spectral")
 mypalette
 
-
+breaks = c(50, 150, 500, 1000, 2500, 5000, 10000, 15000, 25000, 50000, 75000, 100000, 150000, 200000)
+limits = c(100, 500000)
 
 case_count_country_plot_addition <- case_count_country_plot +
   scale_fill_gradientn(colours = rev(mypalette),
-                       breaks = c(500, 1500, 6500, 20000, 95000),
+                       name = "COVID-19 Cases",
                        trans="log10",
-                       label=scales::comma)
+                       breaks = breaks,
+                       limits = limits ,
+                       label=scales::comma) +
+  theme(legend.text = element_text( size=8), legend.key.size = unit(3, "lines"))
 
-case_count_country_plot_addition
+
+case_count_country_plot_addition + scale_fill_discrete(name="COVID-19 Cases")
 
 #BOOM!
-case_count_country_plot_addition <- case_count_country_plot_addition + ggtitle("April 4 Cases Per State")
+case_count_country_plot_addition <- case_count_country_plot_addition + 
+  labs(title = "COVID-19 Cases Per State", subtitle = "April 7th", caption = "Source: John's Hopkins")
+
+case_count_country_plot_addition
 dynamic_label_plot <- plotly_build(case_count_country_plot_addition)
 plotly_build(dynamic_label_plot)
 

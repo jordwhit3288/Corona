@@ -38,7 +38,7 @@ library(usmap)
 
 library(readr)
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-07-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-10-2020.csv")
 
 
 # jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
@@ -179,6 +179,35 @@ plotly_build(dynamic_label_plot)
 
 
 
+---------------------------------------------------
+  ### USING HIGHCHARTER PACKAGE!!! THIS IS GREAT ###
+---------------------------------------------------
+
+
+install.packages("highcharter")
+library(highcharter)
+
+mapdata <- get_data_from_map(download_map_data("countries/us/us-all"))
+head(mapdata)
+
+colnames(mapdata)[12] <- "state"
+mapdata <- mapdata[mapdata$state %in% states_v,]
+mapdata
+
+
+new_usa_with_mapdata <- inner_join(mapdata, current_case_count, by = 'state')
+View(new_usa_with_mapdata)
+
+hcmap("countries/us/us-all", data = new_usa_with_mapdata, value = "cases",
+      name = "Cases",
+      dataLabels = list(enabled = TRUE, format = '{point.name}'),
+      borderColor = "#FAFAFA", borderWidth = 0.1)
+
+
+
+
+
+
 -----------------------------------------
 ### END OF TOTAL CASES PER STATE PLOT ###
 -----------------------------------------
@@ -260,12 +289,22 @@ plot_clean_background <- theme(
 #to upper on the state column for plotting :)
 joined_states_death$state <- str_to_title(joined_states_death$state)
 
+head(joined_states_death)
+
+
 ### doing some manipulation of the plot
 country_death_plot <- state_base + (aes(text= paste("State:", joined_states_death$state, "\n", "Deaths:", joined_states_death$deaths))) + 
   geom_polygon(data = joined_states_death, aes(fill = deaths), color="grey") +
   geom_polygon(color = "black", fill = NA) +
   theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
   plot_clean_background
+
+country_death_plot <- state_base +
+  geom_polygon(data = joined_states_death, aes(fill = deaths), color="grey") +
+  geom_polygon(color = "black", fill = NA) +
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
+  plot_clean_background + 
+  geom_text(label = joined_states_death$state, joined_states_death$deaths)  
 
 plotly_build(country_death_plot)
 country_death_plot 

@@ -1,4 +1,4 @@
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-04-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-10-2020.csv")
 
 View(jhk_corona_data)
 
@@ -72,20 +72,33 @@ colnames(joined_nc_counties)[8] <- 'Cases'
 
 
 display.brewer.all(n=6)
-nc_palette<-brewer.pal(7,"Oranges")
+nc_palette<-brewer.pal(5,"Spectral")
 
 
-nc_confirmed_by_county <- nc_base  + 
- # (aes(text= paste("County:", joined_nc_counties$county, "\n", "Reported Cases:", joined_nc_counties$Cases))) +
+country_death_plot <- state_base + (aes(text= paste("State:", joined_states_death$state, "\n", "Deaths:", joined_states_death$deaths))) + 
+  geom_polygon(data = joined_states_death, aes(fill = deaths), color="grey") +
+  geom_polygon(color = "black", fill = NA) +
+  theme_set(theme_bw(base_size =  15, base_family = 'Times New Roman')) +
+  plot_clean_background
+
+View(joined_nc_counties)
+
+joined_nc_counties <- joined_nc_counties[c(2,8,13,14,15,16)]
+
+nc_confirmed_cases <- nc_base + (aes(text=  paste("County", joined_nc_counties$county, "\n", "Cases", joined_nc_counties$Cases))) +
+  geom_polygon(data = joined_nc_counties, aes(fill = Cases), color = "grey")
+
+nc_confirmed_by_county <- nc_base + 
   geom_polygon(data = joined_nc_counties, aes(fill = Cases), color = "grey") +
   geom_polygon(color = "black", fill = NA) +
-  scale_fill_gradientn(colours = rev(nc_palette),
-                       breaks = c(10, 100, 250, 350, 500, 750)) +
+  scale_fill_gradientn(colours = nc_palette,
+                       breaks = c(10, 100, 250, 350, 500, 800)) +
+  geom_text(label = row.names(joined_nc_counties))
   theme_bw() +
   plot_clean_background +
   ggtitle("Confirmed COVID-19 Cases per County - April 4")
 
-nc_confirmed_by_county
+nc_confirmed_by_county + scale_y
 plotly_build(nc_confirmed_by_county)
 
 

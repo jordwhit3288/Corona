@@ -3,94 +3,27 @@
 world_confirmed <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
 View(world_confirmed)
 
+# ---------------------------------
 
-italy_cases <- filter(world_confirmed, world_confirmed$`Country/Region` == 'Italy')
+#          USA PLOT
+
+# ---------------------------------
 
 usa_cases <- filter(world_confirmed, world_confirmed$`Country/Region` == 'US')
 
-View(italy_cases)
 
-
-italy_cases <- italy_cases %>%
-  gather(`1/22/20`:`4/7/20`, key = 'date', value = 'cases')
-
-usa_cases <- usa_cases %>%
-  gather(`1/22/20`:`4/7/20`, key = 'date', value = 'cases')
-
-head(italy_cases)
-
-#first_date <- colnames(italy_cases)[5]
-#last_date <- colnames(italy_cases)[75]
-
-#head(italy_cases)
-
+usa_cases <- usa_cases %>% ###use today - 1
+  gather(`1/22/20`:`4/11/20`, key = 'date', value = 'cases')
 
 usa_cases <- usa_cases %>% 
   mutate(daily_increase = cases - lag(cases)) # dplyr has its own version of lag
 
 usa_cases$daily_increase <- replace_na(usa_cases$daily_increase, 0) 
-View(usa_cases)
+# View(usa_cases)
 
-italy_cases <- italy_cases %>% 
-  mutate(daily_increase = cases - lag(cases))
-
-italy_cases$date <- as.Date(italy_cases$date, format='%m/%d/%y')
-class(italy_cases$date)
 
 usa_cases$date <- as.Date(usa_cases$date, format='%m/%d/%y')
 class(usa_cases$date)
-
-date <- italy_cases$date
-
-
-# class(date)
-# head(date)
-# View(date)
-# rev(usa_cases$date)[1]
-# 
-# italy_cases$date <- date[1:77]
-# usa_cases$date <- usa_cases$date[1:77]
-# date
-# 
-# usa_cases <- usa_cases$
-
-daily_increase
-italy_daily_increase <- data.frame(date, daily_increase)
-italy_daily_increase <- filter(italy_daily_increase, daily_increase > 10)
-
-
-max(usa_cases$date)
-
-usa_cases$date
-usa_daily_increase <- data.frame(date, daily_increase)
-usa_daily_increase <- filter(usa_daily_increase, daily_increase > 10)
-
-
-italy_daily_increase
-
-class(italy_daily_increase$date)
-italy_daily_increase$date <- as.Date(italy_daily_increase$date, format='%m/%d')
-class(italy_daily_increase$daily_increase)
-
-  
-ggplot(data = italy_daily_increase, mapping=aes(x=date, y=daily_increase)) + 
-  geom_point() +
-  geom_smooth()
-
-italy_daily_increase_plot <- ggplot(data = italy_cases) +
-  geom_smooth(mapping = aes(x=date, y=daily_increase)) +
-  labs(title = "Italy Daily Case Increase", x="Date", y = "Case Increase") +
-  scale_x_date(breaks = "5 days") + theme(axis.ticks = element_line(colour = "gray4"), 
-    panel.grid.major = element_line(linetype = "dotted"), 
-    axis.text.x = element_text(vjust = 0.5, 
-        angle = 45), panel.background = element_rect(fill = "aliceblue", 
-        linetype = "longdash"), plot.background = element_rect(fill = "white"))
-
-daily_increase_plot
-
-daily_increase_plot <- daily_increase_plot + theme_tufte()
-plotly_build(daily_increase_plot)
-
 
 usa_cases$date
 
@@ -98,11 +31,54 @@ usa_daily_increase_plot <- ggplot(data = usa_cases) +
   geom_smooth(mapping = aes(x=date, y=daily_increase)) +
   labs(title = "USA Daily Case Increase", x="Date", y = "Case Increase") +
   scale_x_date(breaks = "5 days") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white"))
+
+usa_daily_increase_plot
+
+
+install.packages("rbokeh")
+library(rbokeh)
+
+
+# ---------------------------------
+
+#           ITALY PLOT
+
+# ---------------------------------
+
+italy_cases <- filter(world_confirmed, world_confirmed$`Country/Region` == 'Italy')
+
+italy_cases <- italy_cases %>% ## use today -1
+  gather(`1/22/20`:`4/11/20`, key = 'date', value = 'cases')
+
+italy_cases <- italy_cases %>% 
+  mutate(daily_increase = cases - lag(cases))
+
+italy_cases$date <- as.Date(italy_cases$date, format='%m/%d/%y')
+class(italy_cases$date)
+
+
+ggplot(data = italy_daily_increase, mapping=aes(x=date, y=daily_increase)) + 
+  geom_point() +
+  geom_smooth()
+
+italy_daily_increase_plot <- ggplot(data = italy_cases) +
+  geom_smooth(mapping = aes(x=date, y=daily_increase)) +
+  labs(title = "Italy Daily Case Increase", subtitle= "April 10", x="Date", y = "Case Increase") +
+  scale_x_date(breaks = "7 days") + theme(axis.ticks = element_line(colour = "gray4"), 
     panel.grid.major = element_line(linetype = "dotted"), 
     axis.text.x = element_text(vjust = 0.5, 
-    angle = 45), panel.background = element_rect(fill = "aliceblue", 
-    linetype = "longdash"), plot.background = element_rect(fill = "white"))
-usa_daily_increase_plot
+        angle = 45), panel.background = element_rect(fill = "aliceblue", 
+        linetype = "longdash"), plot.background = element_rect(fill = "white"))
+
+italy_daily_increase_plot
+
+italy_daily_increase_plot <- italy_daily_increase_plot + theme_tufte()
+plotly_build(daily_increase_plot)
+
+
 
 
               

@@ -13,7 +13,7 @@ usa_cases <- filter(world_confirmed, world_confirmed$`Country/Region` == 'US')
 
 
 usa_cases <- usa_cases %>% ###use today - 1
-  gather(`1/22/20`:`4/11/20`, key = 'date', value = 'cases')
+  gather(`1/22/20`:`4/23/20`, key = 'date', value = 'cases')
 
 usa_cases <- usa_cases %>% 
   mutate(daily_increase = cases - lag(cases)) # dplyr has its own version of lag
@@ -51,7 +51,7 @@ library(rbokeh)
 italy_cases <- filter(world_confirmed, world_confirmed$`Country/Region` == 'Italy')
 
 italy_cases <- italy_cases %>% ## use today -1
-  gather(`1/22/20`:`4/11/20`, key = 'date', value = 'cases')
+  gather(`1/22/20`:`4/23/20`, key = 'date', value = 'cases')
 
 italy_cases <- italy_cases %>% 
   mutate(daily_increase = cases - lag(cases))
@@ -66,7 +66,7 @@ ggplot(data = italy_daily_increase, mapping=aes(x=date, y=daily_increase)) +
 
 italy_daily_increase_plot <- ggplot(data = italy_cases) +
   geom_smooth(mapping = aes(x=date, y=daily_increase)) +
-  labs(title = "Italy Daily Case Increase", subtitle= "April 10", x="Date", y = "Case Increase") +
+  labs(title = "Italy Daily Case Increase", subtitle= "April 23", x="Date", y = "Case Increase") +
   scale_x_date(breaks = "7 days") + theme(axis.ticks = element_line(colour = "gray4"), 
     panel.grid.major = element_line(linetype = "dotted"), 
     axis.text.x = element_text(vjust = 0.5, 

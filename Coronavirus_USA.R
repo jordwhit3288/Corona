@@ -38,13 +38,25 @@ library(usmap)
 
 library(readr)
 #Loading dataset .. for newest day, change /m-dd-yyyy.csv to the MOST CURRENT DATA (current_day -1)
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-10-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-10-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-17-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-22-2020.csv")
 
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-22-2020.csv")
+# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-27-2020.csv")
+# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/05-02-2020.csv")
+# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/05-07-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/05-11-2020.csv")
+# 
+# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/05-10-2020.csv")
+# 
+# 
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports_us/05-11-2020.csv")
 
-# jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
+#jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-02-2020.csv")
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-28-2020.csv")
 #jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/03-22-2020.csv")
-View(jhk_corona_data)
+#View(jhk_corona_data)
 
 #renaming dataframe to friendly name
 corona_data <- jhk_corona_data
@@ -154,7 +166,7 @@ case_count_country_plot
 mypalette<-brewer.pal(15,"Spectral")
 mypalette
 
-breaks = c(50, 150, 500, 1000, 2500, 5000, 10000, 15000, 25000, 50000, 75000, 100000, 150000, 200000)
+breaks = c(50, 150, 500, 1000, 2500, 5000, 10000, 15000, 25000, 50000, 75000, 100000, 200000, 300000)
 limits = c(100, 500000)
 
 case_count_country_plot_addition <- case_count_country_plot +
@@ -171,9 +183,10 @@ case_count_country_plot_addition + scale_fill_discrete(name="COVID-19 Cases")
 
 #BOOM!
 case_count_country_plot_addition <- case_count_country_plot_addition + 
-  labs(title = "COVID-19 Cases Per State", subtitle = "April 7th", caption = "Source: John's Hopkins")
+  labs(title = "COVID-19 Cases Per State", subtitle = "May 12th", caption = "Source: John's Hopkins")
 
 case_count_country_plot_addition
+
 dynamic_label_plot <- plotly_build(case_count_country_plot_addition)
 plotly_build(dynamic_label_plot)
 
@@ -194,10 +207,11 @@ colnames(mapdata)[12] <- "state"
 mapdata <- mapdata[mapdata$state %in% states_v,]
 mapdata
 
+mapdata$state <- tolower(mapdata$state)
 
 new_usa_with_mapdata <- inner_join(mapdata, current_case_count, by = 'state')
 View(new_usa_with_mapdata)
-
+head(new_usa_with_mapdata)
 hcmap("countries/us/us-all", data = new_usa_with_mapdata, value = "cases",
       name = "Cases",
       dataLabels = list(enabled = TRUE, format = '{point.name}'),

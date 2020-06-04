@@ -1,4 +1,4 @@
-jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/04-10-2020.csv")
+jhk_corona_data <- read_csv("jhk_data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/06-03-2020.csv")
 
 View(jhk_corona_data)
 
@@ -126,7 +126,7 @@ View(times_corona_data)
 
 head(times_corona_data)
 #Filtering df to NY data
-
+max(times_corona_data$date)
 times_nc_data <- filter(times_corona_data, state == 'North Carolina')
 
 head(times_nc_data)
@@ -137,18 +137,27 @@ times_nc_data <- times_nc_data %>%
 times_nc_data$daily_increase <- replace_na(times_nc_data$daily_increase, 0) 
 View(usa_cases)
 
+View(times_nc_data)
 
-nc_daily_increase_plot <- ggplot(data = times_nc_data) +
-  geom_smooth(mapping = aes(x=date, y=daily_increase)) +
-  labs(title = "North Carolina Daily Case Increase", subtitle = "4/8/2020", x="Date", y = "Case Increase") +
+ggplot(data = times_nc_data, aes(x=date, y=daily_increase)) +
+  geom_line() +
+  geom_smooth()
+
+nc_daily_increase_plot <- ggplot(data = times_nc_data, aes(x=date, y=daily_increase)) +
+  geom_line() +
+  geom_smooth() +
+  labs(title = "North Carolina Daily Case Increase", subtitle = "June 3", x="Date", y = "Case Increase") +
   scale_x_date(breaks = "5 days") + theme(axis.ticks = element_line(colour = "gray4"), 
                                           panel.grid.major = element_line(linetype = "dotted"), 
                                           axis.text.x = element_text(vjust = 0.5, 
-                                                                     angle = 45), panel.background = element_rect(fill = "aliceblue", 
-                                                                                                                  linetype = "longdash"), plot.background = element_rect(fill = "white"))
+                                           angle = 45), panel.background = element_rect(fill = "aliceblue", 
+                                          linetype = "longdash"), plot.background = element_rect(fill = "white")) + 
+                                          theme(panel.background = element_rect(fill = "gray97", 
+                                          linetype = "blank"), plot.background = element_rect(linetype = "dashed")) +
+                                          labs(y = "Daily Case Increase", caption = "Source: New York Times")
 nc_daily_increase_plot
 
-
+plotly_build(nc_daily_increase_plot)
 
 
 

@@ -79,7 +79,6 @@ View(new_usa_data)
 
 
 #grouping by state to aggregate the num of confirmed cases
-current_case_count <- new_usa_data %>%
   group_by(state) %>%
   summarise(cases = sum(Confirmed))
 

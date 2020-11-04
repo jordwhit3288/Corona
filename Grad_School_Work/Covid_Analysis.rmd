@@ -1,0 +1,454 @@
+---
+title: "Covid Analysis"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+```
+
+
+```{r}
+
+library(readxl)
+covid_data <- read_excel("covid-data.xlsx", 
+     col_types = c("text", "text", "text", 
+         "text", "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+       "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "text", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric", 
+         "numeric", "numeric", "numeric"))
+summary(covid_data)
+
+
+#changing the date column class from "character" to "date" type
+class(covid_data$date)
+covid_data$date <- as.Date(covid_data$date)
+class(covid_data$date)
+
+
+
+# covid_data has 50,350 obs of 41 variables
+
+# interpolation via spline method for the missing values in chosen columns
+# library(zoo)
+# covid_data$life_expectancy <-  na.spline(covid_data$life_expectancy)
+# summary(covid_data$life_expectancy)
+
+##### HDI ####
+hdi_check <- filter(covid_data, covid_data$human_development_index >= 0.915)
+
+unique(hdi_check$location)
+
+hdi_check = mutate(hdi_check, percent_pop_infected = hdi_check$total_cases/hdi_check$population)
+hdi_check$percent_pop_infected = hdi_check$percent_pop_infected * 100
+hdi_check$percent_pop_infected = round(hdi_check$percent_pop_infected, 2)
+
+
+# dropped columns with more than 50% missing data
+hdi_check <-  hdi_check[,!sapply(hdi_check, function(x) mean(is.na(x)))>0.5]
+summary(hdi_check)
+
+which(is.na(hdi_check$gdp_per_capita)) ### this shows it is Lichenstein
+
+hdi_check<- subset(hdi_check, hdi_check$location !="Liechtenstein")
+summary(hdi_check)
+
+
+unique(hdi_check$location)
+
+write.csv(x=hdi_check, file="Covid_Cleansed_HDI_Check.csv")
+
+########### changing tactics using high case count countries ##############
+testing = covid_data %>% group_by(location) %>%
+  summarize(total_cases = sum(new_cases, na.rm = TRUE))
+
+testing = filter(testing, total_cases >= 250000)
+
+x = testing$location
+print(x)
+
+high_case_count_countries = covid_data[covid_data$location %in% x,]
+
+high_case_count_countries = mutate(high_case_count_countries, percent_pop_infected = high_case_count_countries$total_cases/high_case_count_countries$population)
+high_case_count_countries$percent_pop_infected = high_case_count_countries$percent_pop_infected * 100
+high_case_count_countries$percent_pop_infected = round(high_case_count_countries$percent_pop_infected, 2)
+
+covid_data %>% 
+    dplyr::count(location) %>% 
+    tidyr::spread(key = location,value = n)
+
+
+hdi_check <- hdi_check %>%
+  group_by(location) %>% 
+  mutate(pct_change = (new_cases/lead(new_cases) - 1) * 100)
+
+
+
+```
+
+
+```{r}
+
+### Descriptive Statistics
+library(psych)
+describe(hdi_check)
+
+
+sapply(hdi_check, mean, na.rm=TRUE)
+
+sum(covid_data$new_cases, na.rm=TRUE)
+unique(covid_data$location)
+class(hdi_check$date)
+
+hdi_check_max_date <- hdi_check %>%
+  group_by(location) %>%
+  filter(date == "2020-10-18") %>%
+  mutate(max_total_cases = sum(total_cases))
+
+sum(hdi_check_max_date$total_cases)
+
+## median plot
+hdi_check %>%
+  group_by(location) %>%
+  summarise(median = median(hdi_check$new_deaths, na.rm = TRUE))
+
+
+total_deaths <- hdi_check %>%
+  group_by(location) %>%
+  filter(date == "2020-10-18") %>%
+  mutate(total_deahts = sum(total_deaths))
+library(zoo)
+####  7 day moving average
+hdi_check <- hdi_check %>%
+    dplyr::arrange(desc(location)) %>% 
+    dplyr::group_by(location) %>% 
+    dplyr::mutate(cases_7_day = zoo::rollmean(total_cases, k = 7, fill = NA),
+                  cases_15_day = zoo::rollmean(total_cases, k = 15, fill = NA),
+                  cases_21_days = zoo::rollmean(total_cases, k = 21, fill = NA)) %>% 
+  dplyr::ungroup()
+
+mean(hdi_check$cases_7_day, na.rm = TRUE)
+mean(hdi_check$total_cases, na.rm = TRUE)
+
+ggplot(hdi_check, aes(x=date, y = cases_7_day, color = location)) +
+  geom_point()
+
+ggplot(hdi_check_gdp_per_capita, aes(x=location, y =gdp_per_capita)) +
+  geom_bar(stat = "identity") + my_theme
+
+
+hdi_check_gdp_per_capita <- hdi_check %>%
+  group_by(location) %>%
+  filter(date == "2020-10-18") 
+
+
+# percent population infected  ###################### GOOD ONE ########################3
+plotly_build(ggplot(hdi_check, aes(x=date, y=percent_pop_infected, color = location)) +
+  geom_line() +
+  my_theme +
+  scale_x_date(breaks = "10 days"))
+
+## deaths
+ggplot(hdi_check, aes(date, total_deaths, color = location)) +
+  geom_point() +
+  my_theme +
+  scale_x_date(breaks = "30 days") +
+  scale_y_continuous(trans ="log2")
+
+
+ggplot(hdi_check, aes(date, total_cases, color = location)) +
+  geom_point() +
+  my_theme +
+  scale_x_date(breaks = "30 days") +
+  scale_y_continuous(trans ="log2")
+
+# tests_per_case
+ggplot(filter(hdi_check, location=='United States') ,aes(x=date, y=tests_per_case, color = location)) +
+  geom_point() +
+  my_theme +
+  scale_x_date(breaks = "30 days")
+
+plotly_build(ggplot(hdi_check, aes(x=date, y= tests_per_case, color = location)) +
+         geom_point() +
+  scale_y_continuous(trans = "log2"))
+
+
+ggplot(filter(hdi_check, location=='United States') ,aes(x=date, y=stringency_index, color = location)) +
+  geom_line() +
+  my_theme +
+  scale_x_date(breaks = "30 days") 
+par(new= TRUE)
+ggplot(filter(hdi_check, location=='United Kingdom') ,aes(x=date, y=stringency_index, color = location)) +
+  geom_line(hdi_check, aes(x=date, y=deaths)) +
+  my_theme +
+  scale_x_date(breaks = "30 days")
+
+
+ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=pct_change)) +
+  geom_point(na.rm=TRUE) +
+  my_theme
+
+ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=stringency_index)) +
+  geom_smooth(na.rm=TRUE) +
+  my_theme
+
+ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=new_cases)) +
+  geom_smooth(na.rm=TRUE) +
+  my_theme
+
+ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=cases_21_days)) +
+  geom_point(na.rm = TRUE) +
+  my_theme
+
+# population 
+pop = ggplot(total_deaths, aes(x=location, y = population)) +
+  geom_bar(stat = "identity") + my_theme
+
+percent_pop_inf = ggplot(total_deaths, aes(x=location, y = percent_pop_infected)) +
+  geom_bar(stat = "identity") + my_theme
+
+multiplot(pop, percent_pop_inf, cols = 2)
+
+#### total tests #####
+total_tests = aggregate(hdi_check$new_cases, by=list(location=hdi_check$location), FUN=sum, na.rm=TRUE)
+
+ggplot(total_tests, aes(x=location, y = x)) +
+  geom_bar(stat= "identity") + my_theme +
+  scale_y_continuous(trans ="log2")
+
+
+
+################## HEALTH REALTED VARIABLES SHOWING DEATH #####################
+# total deaths
+plotly_build(ggplot(total_deaths, aes(x=location, y = total_deaths))
+             + geom_bar(stat="identity") + my_theme 
+             #+ scale_y_continuous(trans="log2")
+             ) 
+
+## diabetes
+plotly_build(ggplot(total_deaths, aes(x=location, y =diabetes_prevalence))
+             + geom_bar(stat="identity") + my_theme 
+             #+ scale_y_continuous(trans="log2")
+             ) 
+
+diabetes = ggplot(total_deaths, aes(x=location, y = diabetes_prevalence)) +
+  geom_bar(stat= "identity") + my_theme
+
+cardio_death = ggplot(total_deaths, aes(x=location, y=cardiovasc_death_rate)) +
+  geom_bar(stat = "identity") + my_theme
+             
+male_smokers = ggplot(total_deaths, aes(x=location, y=male_smokers)) +
+  geom_bar(stat = "identity") + my_theme
+
+male_smokers = ggplot(total_deaths, aes(x=location, y=male_smokers)) +
+  geom_bar(stat = "identity") + my_theme
+
+### female vs male smokers ###
+library(reshape2)
+smokers = total_deaths[c(3,36:37)]
+smokers <- melt(smokers, id.var = "location")
+smokers_all_genders = ggplot(smokers, aes(x = location, y = value, fill = location)) + 
+  geom_bar(stat = "identity") + my_theme
+
+deaths = ggplot(total_deaths, aes(x = location, y = total_deaths)) + 
+  geom_bar(stat = "identity") + my_theme +
+  scale_y_continuous(trans = "log2")
+
+multiplot(cardio_death, smokers_all_genders, diabetes,  cols=2)
+
+
+##### new _cases boxplot !!! this is good
+ggplot(hdi_check, aes(x=location, y=new_cases)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = "log2") + 
+  my_theme
+
+ggplot(hdi_check, aes(x=location, y=new_cases)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = "log2") + 
+  my_theme
+
+ggplot(hdi_check, aes(x=location, y=tests_per_case)) +
+  geom_boxplot() +
+  scale_y_continuous(trans = "log2") + 
+  my_theme
+
+plotly_build(ggplot(hdi_check, aes(x=date, y=total_deaths, color = location)) +
+  geom_point() +
+  my_theme +
+  scale_x_date(breaks = "10 days"))
+
+ggplot(hdi_check, aes(x=date, y=positive_rate, color = location)) +
+         geom_point()
+
+ggplot(filter(hdi_check, location == 'United States')) + 
+  #geom_col(aes(x = location, y = new_cases), fill = "white") +
+  geom_point(aes(x = date, y = hdi_check$stringency_index), size = 1.5, color="red", group = 1)
+
+
+
+
+##### my theme #####
+my_theme = theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 90), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white")) 
+
+hdi_check_no_us = filter(hdi_check, location != 'United States')
+
+ggplot(hdi_check_no_us, aes(location,new_cases)) +
+  geom_violin(scale = "area") + my_theme
+
+
+
+hdi_check %>%
+  filter(hdi_check, location == 'United States') %>%
+  var(hdi_check$total_cases, na.rm = TRUE)
+
+
+ggplot(hdi_check, aes(new_cases)) +
+  geom_histogram(bins = 2)
+
+plotly_build(total_cases_box)
+
+mean(hdi_check$new_cases, na.rm = TRUE)
+
+```
+
+```{r}
+
+########### PLOTS #############
+
+library(scales)
+#### percent of population infected
+ggplot(hdi_check, aes(x=location, y = percent_pop_infected)) + 
+  geom_bar(stat="identity") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white")) +
+  labs(title = "Percent of Population Infected", x= "Country", y="Percent Infected") +
+   scale_y_continuous(labels = percent)
+
+percent_infected_plot <- ggplot(data = hdi_check, aes(x=date, y=percent_pop_infected, color = location)) + 
+  labs(title = "Percent of Population Infected", x="Date", y = "Percent Infected") +
+  geom_line()+
+ # scale_y_continuous(labels = scales::percent) + 
+  scale_x_date(breaks = "10 days") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white"))
+
+# percent_infected_plot <- percent_infected_plot + (aes(text= paste("Location:", hdi_check$location, "\n", "Percent Infected", hdi_check$percent_pop_infected * 100)))
+
+plotly_build(percent_infected_plot)
+
+
+ggplot(hdi_check, aes(x=date, y=stringency_index, color = continent)) +
+  geom_line() + my_theme
+
+```
+
+
+
+
+
+
+################## DISREGARD ###################
+```{r}
+
+### usa subset of hdi_check ###
+usa_subset = filter(hdi_check, location == "United States")
+
+ggplot(data = usa_subset, aes(x=date, y=percent_pop_infected, color = location)) + 
+  labs(title = "Daily Case Increase", x="Date", y = "Case Increase") +
+  geom_line()+
+  scale_y_continuous(labels = scales::percent) + 
+  scale_x_date(breaks = "10 days") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white"))
+
+
+
+
+
+ggplot(hdi_check, aes(x=date, y=new_cases, color = location)) +
+  geom_line()
+
+
+ggplot(data = hdi_check, aes(x=date, y=new_cases_smoothed_per_million, color = location)) + 
+  labs(title = "Daily Case Increase", x="Date", y = "Case Increase") +
+  geom_line()+ 
+  scale_x_date(breaks = "10 days") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white")) 
+#+  scale_y_continuous(trans = "log2")
+
+
+ggplot(hdi_check, aes(x=location, y=male_smokers)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white")) 
+
+l#Filtering df to united states data
+new_usa_data <- filter(covid_data, location == 'United States')
+head(new_usa_data)
+View(new_usa_data)
+new_usa_data$date <- as.Date(new_usa_data$date)
+
+ggplot(data = new_usa_data, aes(x=date, y=new_cases)) + 
+  labs(title = "Daily Case Increase", x="Date", y = "Case Increase") +
+  geom_line()+ 
+  geom_smooth() + 
+  scale_x_date(breaks = "10 days") + theme(axis.ticks = element_line(colour = "gray4"), 
+  panel.grid.major = element_line(linetype = "dotted"), 
+  axis.text.x = element_text(vjust = 0.5, angle = 45), panel.background = element_rect(fill = "aliceblue", 
+  linetype = "longdash"), plot.background = element_rect(fill = "white")) 
+
+
+ggplot(new_usa_data, aes(x= location, y=new_usa_data$male_smokers))  +
+  geom_bar(stat = "identity")
+
+new_usa_data$smokers = new_usa_data$male_smokers + new_usa_data$female_smokers
+
+#Filtering df to North America
+north_america <- filter(covid_data, continent == 'North America')
+
+north_america_filter <- filter(north_america, total_cases >= 1000)
+
+north_american_countries_case_count <- north_america %>%
+  group_by(location) %>%
+  filter(date == "2020-10-18")
+
+ggplot(data = new_usa_data, aes(x=date, y=total_cases, color = location)) +
+  geom_point() +
+  scale_y_continuous(trans='log10')
+
+ggplot(data = north_american_countries_case_count, aes(x=total_cases, y=handwashing_facilities)) +
+  geom_point() +
+  scale_x_continuous(trans="log10")
+
+colSums(is.na(covid_data))
+
+```

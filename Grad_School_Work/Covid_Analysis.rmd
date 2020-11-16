@@ -14,6 +14,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(plotly)
+library(Rmisc)
 
 ```
 
@@ -62,6 +63,7 @@ hdi_check$percent_pop_infected = hdi_check$percent_pop_infected * 100
 hdi_check$percent_pop_infected = round(hdi_check$percent_pop_infected, 2)
 
 
+
 # dropped columns with more than 50% missing data
 hdi_check <-  hdi_check[,!sapply(hdi_check, function(x) mean(is.na(x)))>0.5]
 summary(hdi_check)
@@ -69,13 +71,69 @@ summary(hdi_check)
 which(is.na(hdi_check$gdp_per_capita)) ### this shows it is Lichenstein
 
 hdi_check<- subset(hdi_check, hdi_check$location !="Liechtenstein")
+
+hdi_check<- subset(hdi_check, hdi_check$location !="Hong Kong")
 summary(hdi_check)
 
+unique(covid_data$location)
 
 unique(hdi_check$location)
 
-write.csv(x=hdi_check, file="Covid_Cleansed_HDI_Check.csv")
+#write.csv(x=hdi_check, file="Covid_Cleansed_HDI_Check.csv")
 
+```
+
+```{r}
+#deleting rows with missingness
+hdi_check_cleanse_test <- filter(covid_data, covid_data$human_development_index >= 0.88)
+unique(hdi_check_cleanse_test$location)
+
+hdi_cleansed <- hdi_check[complete.cases(hdi_check), ]
+unique(hdi_cleansed$location)
+
+```
+
+
+# IMPUTATION ###
+```{r}
+install.packages("imputeTS")
+library(imputeTS)
+
+
+#aus = select "Australia"      "Belgium"        "Canada"         "Denmark"        "Finland"        "Germany"        "Iceland"        "Ireland"       
+# [9] "Netherlands"    "New Zealand"    "Norway"         "Singapore"      "Sweden"         "Switzerland"    "United Kingdom" "United States" 
+
+
+
+
+hdi_check$new_tests = na_ma(hdi_check$new_tests, weighting = "simple")
+
+```
+
+
+# Cleared out variables in Excel that have high correlation 
+```{r}
+
+
+library(readxl)
+covid_test <- read_excel("covid_test.xlsx")
+
+covid_test
+
+library(mice)
+imp2 <- mice(covid_test, maxit = 5)
+
+covid_test <- mice(covid_test,m=5,maxit=50,meth='rf',seed=500)
+
+install.packages("mice")
+
+library(zoo)
+
+covid_test$total_tests = na.spline(covid_test$total_tests)
+
+```
+
+```{r}
 ########### changing tactics using high case count countries ##############
 testing = covid_data %>% group_by(location) %>%
   summarize(total_cases = sum(new_cases, na.rm = TRUE))
@@ -100,6 +158,7 @@ hdi_check <- hdi_check %>%
   group_by(location) %>% 
   mutate(pct_change = (new_cases/lead(new_cases) - 1) * 100)
 
+names(hdi_check)
 
 
 ```
@@ -107,11 +166,26 @@ hdi_check <- hdi_check %>%
 
 ```{r}
 
+cols = c(1:4, 25)
+new_hdi_check = hdi_check[-cols]
+
+res = cor(new_hdi_check)
+round(res, 2)
+```
+
+# Descriptive Statistics
+```{r}
 ### Descriptive Statistics
 library(psych)
-describe(hdi_check)
+stats = describe(hdi_check[5:41])
 
+class(stats)
+stats = data.frame(stats)
 
+stats[c(2,3,5,10,11)]
+```
+
+```{r}
 sapply(hdi_check, mean, na.rm=TRUE)
 
 sum(covid_data$new_cases, na.rm=TRUE)
@@ -131,6 +205,21 @@ hdi_check %>%
   summarise(median = median(hdi_check$new_deaths, na.rm = TRUE))
 
 
+ ggplot(hdi_check, aes(x=location, y=total_cases_per_million)) +
+    geom_boxplot(alpha=0.7) +
+    stat_summary(fun.y=median, geom="point", shape=20, size=4, color="red", fill="red") +
+    theme(legend.position="none") +
+    scale_fill_brewer(palette="Set1") +
+   my_theme +
+   #scale_y_continuous(trans="log2") +
+   labs(title = "Total Cases Per Million Box Plot", x = "Country" , y="Total Cases Per Million")
+   
+ggplot(hdi_check, aes(x=date, y = total_cases_per_million, color = location)) +
+  geom_line() + 
+  my_theme + 
+  labs(title = "Total Cases Per Million Line Plot", x = "Date" , y="Total Cases Per Million")
+ 
+ 
 total_deaths <- hdi_check %>%
   group_by(location) %>%
   filter(date == "2020-10-18") %>%
@@ -160,12 +249,88 @@ hdi_check_gdp_per_capita <- hdi_check %>%
   filter(date == "2020-10-18") 
 
 
-# percent population infected  ###################### GOOD ONE ########################3
-plotly_build(ggplot(hdi_check, aes(x=date, y=percent_pop_infected, color = location)) +
+## boxplot of the smoothed cases per million
+ggplot(hdi_check, aes(x=location, y=new_cases_per_million)) +
+  geom_boxplot() +
+  #scale_y_continuous(trans = "log2") + 
+  my_theme
+
+ggplot(hdi_check, aes(x=location, y=total_cases)) +
+  geom_boxplot() +
+  #scale_y_continuous(trans = "log2") + 
+  my_theme +
+  labs(title = "Total Cases per Country on Log2 Scale", x="Country", y ="Total Cases (Log2 Scale)")
+```
+
+# percent population infected  ###################### GOOD ONE ########################
+```{r}
+percent_pop_infected = ggplot(hdi_check, aes(x=date, y=percent_pop_infected, color = location)) +
   geom_line() +
   my_theme +
-  scale_x_date(breaks = "10 days"))
+  scale_x_date(breaks = "10 days") 
 
+percent_pop_infected + labs(color= 'Country')
+
+total_tests = ggplot(hdi_check, aes(x=date, y=total_tests, color = location)) +
+  geom_line() +
+  my_theme +
+  scale_x_date(breaks = "10 days") +
+  labs(title = "Total Tests per Country")
+
+total_tests + labs(color= 'Country')
+
+ggplot(total_deaths, aes(x=location, y=percent_pop_infected)) +
+  geom_bar(stat = "identity") +
+  my_theme
+
+```
+
+# Getting total tests... painful
+```{r}
+options(scipen= 0)
+
+hdi_check %>%
+  filter(location == 'Germany') %>%
+  summarize(max(total_tests, na.rm= TRUE))
+#19276507
+
+hdi_check %>%
+  filter(location == 'Netherlands') %>%
+  summarize(max(total_tests, na.rm= TRUE))
+# 2872935
+
+hdi_check %>%
+  filter(location == 'Singapore') %>%
+  summarize(max(total_tests, na.rm= TRUE))
+# 3290291
+
+Country <- c('Australia', 'Belgium', 'Canada', 'Denmark', 'Finland', 'Germany', 'Iceland', 'Ireland', 'Netherlands', 
+           'New Zealand', 'Norway', 'Singapore', 'Sweden', 'Switzerland', 'United Kingdom', 'United States')
+
+Total_Tests = c(6300238, 3912766 ,7739964, 	4426519, 1263857, 19276507, 158855, 1379822, 2872935,1027134, 1166059, 3290291, 1248653,  1556475, 23903200, 129901989 )
+
+
+total_tests = data.frame(Country, Total_Tests)
+
+
+total_tests_plot = ggplot(total_tests, aes(x=Country, y=Total_Tests)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  labs(title = "Total Tests per Country", x= "Country", y = "Total Tests") 
+
+  
+total_cases_plot = ggplot(total_deaths, aes(x=location, y=total_cases)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  labs(title = "Total Cases per Country", x= "Country", y = "Total Cases") 
+
+multiplot(total_tests_plot, total_cases_plot, cols = 2)
+
+
+```
+
+# Deaths, Tests Per Case, Stringency Index
+```{r}
 ## deaths
 ggplot(hdi_check, aes(date, total_deaths, color = location)) +
   geom_point() +
@@ -191,32 +356,27 @@ plotly_build(ggplot(hdi_check, aes(x=date, y= tests_per_case, color = location))
   scale_y_continuous(trans = "log2"))
 
 
-ggplot(filter(hdi_check, location=='United States') ,aes(x=date, y=stringency_index, color = location)) +
-  geom_line() +
+### stringency index
+
+lockdown = ggplot(hdi_check, aes(x=date, y=stringency_index, color = location)) +
+  geom_smooth(se = F)  +
   my_theme +
-  scale_x_date(breaks = "30 days") 
-par(new= TRUE)
-ggplot(filter(hdi_check, location=='United Kingdom') ,aes(x=date, y=stringency_index, color = location)) +
-  geom_line(hdi_check, aes(x=date, y=deaths)) +
+  scale_x_date(breaks = "30 days") +
+  ylim(0,100) +
+  labs(title = "Stringency Index per Country", x = "Date", y ="Index")
+
+# new cases
+new_cases = ggplot(hdi_check, aes(x=date, y=new_cases, color = location)) +
+  geom_smooth(se =F)  +
   my_theme +
-  scale_x_date(breaks = "30 days")
+  scale_x_date(breaks = "30 days") +
+  scale_y_continuous(trans = "log2") +
+  theme(legend.position = "none") +
+  labs(title = "New Cases per Country", x= "Date", y ="New Cases (Log2 scale)")
+
+multiplot(new_cases, lockdown,  cols=2)
 
 
-ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=pct_change)) +
-  geom_point(na.rm=TRUE) +
-  my_theme
-
-ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=stringency_index)) +
-  geom_smooth(na.rm=TRUE) +
-  my_theme
-
-ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=new_cases)) +
-  geom_smooth(na.rm=TRUE) +
-  my_theme
-
-ggplot(filter(hdi_check, location == 'United States'), aes(x=date, y=cases_21_days)) +
-  geom_point(na.rm = TRUE) +
-  my_theme
 
 # population 
 pop = ggplot(total_deaths, aes(x=location, y = population)) +
@@ -227,6 +387,14 @@ percent_pop_inf = ggplot(total_deaths, aes(x=location, y = percent_pop_infected)
 
 multiplot(pop, percent_pop_inf, cols = 2)
 
+
+### positivity rate
+ggplot(hdi_check, aes(x=date, y=positive_rate, color = location)) +
+  geom_line() + 
+  my_theme + 
+  scale_x_date(breaks = "10 days")
+
+
 #### total tests #####
 total_tests = aggregate(hdi_check$new_cases, by=list(location=hdi_check$location), FUN=sum, na.rm=TRUE)
 
@@ -235,44 +403,50 @@ ggplot(total_tests, aes(x=location, y = x)) +
   scale_y_continuous(trans ="log2")
 
 
+## total cases per thousand/ million
 
+ggplot(total_deaths, aes(x=location, y=total_cases_per_million)) +
+  geom_bar(stat = "identity") + my_theme
+
+plotly_build(ggplot(hdi_check, aes(x=date, y=total_cases_per_million, color = location)) +
+  geom_line() + my_theme)
+```
+
+# Health 
+```{r}
 ################## HEALTH REALTED VARIABLES SHOWING DEATH #####################
+### female vs male smokers ###
+library(reshape2)
+smokers = total_deaths[c(3,36:37)]
+smokers <- melt(smokers, id.var = "location")
+
+
 # total deaths
 plotly_build(ggplot(total_deaths, aes(x=location, y = total_deaths))
              + geom_bar(stat="identity") + my_theme 
              #+ scale_y_continuous(trans="log2")
              ) 
 
-## diabetes
-plotly_build(ggplot(total_deaths, aes(x=location, y =diabetes_prevalence))
-             + geom_bar(stat="identity") + my_theme 
-             #+ scale_y_continuous(trans="log2")
-             ) 
 
 diabetes = ggplot(total_deaths, aes(x=location, y = diabetes_prevalence)) +
-  geom_bar(stat= "identity") + my_theme
+  geom_bar(stat= "identity") + my_theme + 
+  labs(title = "Diabetes Prevelance", x= "Country", y = "Diabetes Prevelance")
 
 cardio_death = ggplot(total_deaths, aes(x=location, y=cardiovasc_death_rate)) +
-  geom_bar(stat = "identity") + my_theme
-             
-male_smokers = ggplot(total_deaths, aes(x=location, y=male_smokers)) +
-  geom_bar(stat = "identity") + my_theme
-
-male_smokers = ggplot(total_deaths, aes(x=location, y=male_smokers)) +
-  geom_bar(stat = "identity") + my_theme
-
-### female vs male smokers ###
-library(reshape2)
-smokers = total_deaths[c(3,36:37)]
-smokers <- melt(smokers, id.var = "location")
-smokers_all_genders = ggplot(smokers, aes(x = location, y = value, fill = location)) + 
-  geom_bar(stat = "identity") + my_theme
-
-deaths = ggplot(total_deaths, aes(x = location, y = total_deaths)) + 
   geom_bar(stat = "identity") + my_theme +
-  scale_y_continuous(trans = "log2")
+  labs(title = "Cardio Death Rate", x= "Country", y = "Death Rate")
 
-multiplot(cardio_death, smokers_all_genders, diabetes,  cols=2)
+smokers_all_genders = ggplot(smokers, aes(x = location, y = value)) + 
+  geom_bar(stat = "identity") + my_theme +
+  labs(title = "Smokers per Country", x="Country", y ="Smokers")
+
+total_cases = ggplot(total_deaths, aes(x = location, y = total_deaths)) + 
+  geom_bar(stat = "identity") + my_theme +
+  scale_y_continuous(trans = "log2") +
+  labs(title= "Total Cases (log2)", x="Country", y ="Total Cases")
+
+multiplot(cardio_death, smokers_all_genders, diabetes, total_cases , cols=2)
+
 
 
 ##### new _cases boxplot !!! this is good
